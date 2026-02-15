@@ -29,6 +29,6 @@ try {
     console.log(`Example app listening on port http://localhost:${port}`);
   });
 } catch (err) {
-  console.error(err);
+  console.error(`Mongo DB connection has errored: ${err}`); // this actually doesn't catch any error because the errors is already being catched and 'swallowed' in the try-catch block in connectDB function, if i want to catch the error in the caller aka HERE, i will need to write 'throw error' in the connectDB function.
   process.exit();
 }
