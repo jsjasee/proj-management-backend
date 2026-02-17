@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 // import the routes
 import healthcheckRouter from "./routes/healthcheck.routes.js";
+import authRouter from "./routes/healthcheck.routes.js";
 
 const app = express();
 
@@ -20,8 +21,9 @@ app.use(
   }),
 );
 
-// import the routes (must use USE NOT GET!)
+// import the routes (must use USE NOT GET!) - check Proj resource docs (PRD) for the routes.
 app.use("/api/v1/healthcheck", healthcheckRouter); // if got extra stuff like you want to hit "/api/v1/healthcheck/instagram, you DON'T need to change this, you just create another '/instagram' in healthcheckRouter function"
+app.use("/api/v1/auth", authRouter);
 
 // below means use the app, then the GET method (there's only get, post, put/patch & delete), then GET from which url (this is the ROUTES), followed by callback (request & response) -> data sent from client is request, data sent from server is response.
 app.get("/", (req, res) => {
