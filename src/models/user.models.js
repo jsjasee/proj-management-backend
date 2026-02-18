@@ -84,15 +84,25 @@ const userSchema = new Schema(
 you can also attach 'write methods' & 'hooks' to your schema
 */
 
-userSchema.pre("save", async function (next) {
+// Mongoose pre('save') middleware has TWO styles:
+//
+// 1) (this function) Async/Promise style: `async function () {}`
+//    - Do NOT use `next`.
+//    - Mongoose waits for the returned Promise.
+//    - If it resolves -> continues to next hooks / save.
+//    - If it throws -> save fails.
+//
+// 2) Callback style: `function (next) {}`
+//    - MUST call `next()` (or `next(err)`).
+//    - Use this style when you’re using callbacks instead of async/await.
+userSchema.pre("save", async function () {
   // next keyword here is saying im done with this step move on to the next hook or whatever step downstream like controllers or smth / request etc..?
 
   if (!this.isModified("password")) {
-    return next(); // don't proceed to the below steps if it is not the password field being modified
+    return; // don't proceed to the below steps if it is not the password field being modified
   }
 
   this.password = await bcrypt.hash(this.password, 10); // 10 means how many rounds of hashing you want to do, and then we overwrite the password. IMPORTANT: RIGHT NOW EVERY TIME WE SAVE OR UPDATE DATA LIKE EMAIL OR WHATEVER THE PRE-HOOK WILL RUN, AND THAT MEANS OUR PASSWORD IS ENCRYPTED / HASHED EACH TIME. we need a check to ensure password is hashed ONLY when pw is changed / first time user entering the password.
-  next();
 });
 
 // ^ attach the pre-hook to the SAVE operation, and use a function NOT an arrow function as we need the context of it

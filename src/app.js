@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 // import the routes
 import healthcheckRouter from "./routes/healthcheck.routes.js";
-import authRouter from "./routes/healthcheck.routes.js";
+import authRouter from "./routes/auth.routes.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -10,6 +11,7 @@ const app = express();
 app.use(express.json({ limit: "16kb" })); // anyone can send the website json data? then specify a limit.
 app.use(express.urlencoded({ extended: true, limit: "16kb" })); // the arguments in the url like "jason%20lemon"?
 app.use(express.static("public")); // make the application publicly viewable? now the whole public folder is available?
+app.use(cookieParser()); // now we have access to cookies 🍪
 
 // cors configuration (cors is something to be handled in the backend. cors is just indicating i am allowing myself to communicate with what? what url is backend allowed to communicate?)
 app.use(
