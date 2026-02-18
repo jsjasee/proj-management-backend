@@ -2,7 +2,11 @@ import { User } from "../models/user.models.js"; // this will help us query thin
 import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
-import { emailVerificationMailgenContent, sendEmail } from "../utils/mail.js";
+import {
+  emailVerificationMailgenContent,
+  forgotPasswordMailgenContent,
+  sendEmail,
+} from "../utils/mail.js";
 import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -314,6 +318,99 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid refresh token.");
   }
 });
+
+const forgotPasswordRequest = asyncHandler(async (req, res) => {
+  // when the user clicks on forgot password, we will get their 'email' from the body
+  const { email } = req.body;
+
+  // search the email in the DB
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  // if user exists (process is the SAME, unHashedToken for email, hashedToken we keep for ourselves so hackers cannot use our hashed version to decode it)
+  const { unHashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
+
+  user.forgotPasswordToken = hashedToken;
+  user.forgotPasswordExpiry = tokenExpiry;
+
+  await user.save({ validateBeforeSave: false });
+
+  // taken from the registerUser controller BUT instead of dynamically creating the URL, we just redirect the user directly, this is what most web-apps do?
+  await sendEmail({
+    email: user?.email,
+    subject: "Password Reset Request",
+    mailgenContent: forgotPasswordMailgenContent(
+      user.username,
+      `${process.env.FORGOT_PASSWORD_REDIRECT_URL}/${unHashedToken}`,
+    ),
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "Password reset mail has been sent to your mail",
+      ),
+    );
+});
+
+const resetForgotPassword = asyncHandler(async (req, res) => {
+  const { resetToken } = req.params;
+  const { newPassword } = req.body;
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // find the user based on the hashedToken (previously we saved this hashedToken on the DB!)
+  const user = await User.findOne({
+    forgotPasswordToken: hashedToken,
+    forgotPasswordExpiry: { $gt: Date.now() }, // the expiry should be in the future
+  });
+
+  if (!user) {
+    throw new ApiError(489, "Token is invalid or expired.");
+  }
+
+  user.forgotPasswordExpiry = undefined;
+  user.forgotPasswordToken = undefined;
+
+  user.password = newPassword; // the moment you update the password field, the pre-hook (in user.models.js) will be activated and hash this password, and then update it.
+
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset was successful"));
+});
+
+// this controller only works when the user is LOGGED IN and wants to change their password (diff from 'resetForgotPassword')
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body; // we know the oldPassword because user is LOGGED IN
+
+  const user = await User.findById(req.user?._id);
+
+  const isPasswordValid = await user.isPasswordCorrect(oldPassword); // we have defined this method in user.models.js
+
+  if (!isPasswordValid) {
+    throw new ApiError(400, "Invalid old password");
+  }
+
+  // save the new password
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully."));
+});
 // const getCurrentUser = asyncHandler(async (req, res) => {
 
 // })
@@ -325,4 +422,8 @@ export {
   getCurrentUser,
   verifyEmail,
   resendEmailVerification,
+  refreshAccessToken,
+  forgotPasswordRequest,
+  resetForgotPassword,
+  changeCurrentPassword,
 };
