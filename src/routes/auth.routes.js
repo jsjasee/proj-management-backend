@@ -2,7 +2,10 @@
 import { Router } from "express";
 import { registerUser, login } from "../controllers/auth.controller.js";
 import { validate } from "../middlewares/validator.middleware.js";
-import { userRegisterValidator } from "../validators/index.js";
+import {
+  userLoginValidator,
+  userRegisterValidator,
+} from "../validators/index.js";
 
 const router = Router();
 
@@ -14,6 +17,6 @@ router.route("/register").post(userRegisterValidator(), validate, registerUser);
 // so we run userRegisterValidator() to collect the errors..? collect ot where? then validate is the middleware, which will process the collected errors..?? then finally the request reaches registerUser to do what it needs...
 // but when writing the code, we write the middleware first then validation then the routes?
 
-router.route("/login").post(login);
+router.route("/login").post(userLoginValidator(), validate, login);
 
 export default router;
