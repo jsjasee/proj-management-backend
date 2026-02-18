@@ -148,4 +148,32 @@ const login = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, login };
+const logoutUser = asyncHandler(async (req, res) => {
+  // how to logout user -> we need to get the refresh token first
+  // we also need to create a logout route
+  // we have req.user because we have attached user obj to the request after verifying that access token is valid in the middlewares code
+  await User.findByIdAndUpdate(
+    req.user._id, // what to find: find the user based on id; then the second part is an object with $set with what fields you want to update.
+    {
+      $set: {
+        refreshToken: "",
+      },
+    },
+    {
+      new: true, // once everything is done, give the updated / newest version of the object
+    },
+  );
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  // send the response but need to clear the cookies (remove all traces)
+  // then we can test the logout in postman! but just make sure to run the login route first, so you have the stored cookies, then the logout will work (after that the cookies in postman will be cleared)
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged out"));
+});
+
+export { registerUser, login, logoutUser };

@@ -1,11 +1,16 @@
 // the boilerplate for routes is the same
 import { Router } from "express";
-import { registerUser, login } from "../controllers/auth.controller.js";
+import {
+  registerUser,
+  login,
+  logoutUser,
+} from "../controllers/auth.controller.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import {
   userLoginValidator,
   userRegisterValidator,
 } from "../validators/index.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -18,5 +23,8 @@ router.route("/register").post(userRegisterValidator(), validate, registerUser);
 // but when writing the code, we write the middleware first then validation then the routes?
 
 router.route("/login").post(userLoginValidator(), validate, login);
+
+// secure aka protected routes
+router.route("/logout").post(verifyJWT, logoutUser); // we can only logout user who are logged in, we need a middleware here
 
 export default router;
