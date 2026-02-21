@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import { ProjectMember } from "../models/projectmember.models.js";
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
@@ -34,3 +36,41 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, "Invalid access token.");
   }
 });
+
+export const validateProjectPermission = (role = []) => {
+  asyncHandler(async (req, res, next) => {
+    const { projectId } = req.params;
+
+    if (!projectId) {
+      throw new ApiError(400, "Project id is missing");
+    }
+
+    // find the project member so we can find its role
+    const projectMember = await ProjectMember.findOne({
+      project: new mongoose.Types.ObjectId(projectId),
+      user: new mongoose.Types.ObjectId(req.user._id), // this ASSUMES THAT THIS MIDDLEWARE ALWAYS RUN AFTER VERIFY JWT MIDDLEWARE
+    });
+
+    if (!projectMember) {
+      throw new ApiError(
+        400,
+        "Project not found or user is not found for this project",
+      );
+    }
+
+    const givenRole = projectMember?.role;
+
+    req.user.role = givenRole; // this is just for reference, adding this field to the request
+
+    // now you have to check if the givenRole matches with the role args that is passed in which is like ["admin"]
+
+    if (!role.includes(givenRole)) {
+      throw new ApiError(
+        403,
+        "You do not have permission to perform this action.",
+      );
+    }
+
+    next(); // pass it on to the next middleware if there is or the next controller.
+  });
+};
