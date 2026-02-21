@@ -34,7 +34,7 @@ router
 
 router
   .route("/:projectId") // make sure this projectId matches whatever you are catching in the req.params
-  .get(validateProjectPermission(AvailableUserRole), validate, getProjectById) // handle the GET request. we pass in the ENTIRE AvailableUserRole array which means EVERYONE can perform access route
+  .get(validateProjectPermission(AvailableUserRole), getProjectById) // handle the GET request. we pass in the ENTIRE AvailableUserRole array which means EVERYONE can perform access route
   .put(
     validateProjectPermission([UserRolesEnum.ADMIN]),
     createProjectValidator(),

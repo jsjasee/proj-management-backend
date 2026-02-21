@@ -38,7 +38,8 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
 });
 
 export const validateProjectPermission = (role = []) => {
-  asyncHandler(async (req, res, next) => {
+  // make sure to RETURN a function because when using the validator in the project.routes.js, express.js requires FUNCTIONS to be present as the arguments not a function call eg. in router.route("/").get(getProjects), getProjects is a function ref not a function call.
+  return asyncHandler(async (req, res, next) => {
     const { projectId } = req.params;
 
     if (!projectId) {
