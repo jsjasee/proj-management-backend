@@ -28,6 +28,7 @@
     "jsonwebtoken": "^9.0.3",
     "mailgen": "^2.0.32",
     "mongoose": "^9.2.1",
+    "multer": "^2.0.2",
     "nodemailer": "^8.0.1"
   }
 }
