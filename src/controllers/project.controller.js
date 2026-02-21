@@ -132,6 +132,14 @@ const deleteProject = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Project not found");
   }
 
+  // should delete it's corresponding members in that project as well!
+  const deletedProjectMembers = await ProjectMember.deleteMany({
+    project: projectId,
+  });
+  if (!deletedProjectMembers) {
+    throw new ApiError(404, "No members in this project.");
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(200, project, "Project deleted successfully"));
@@ -146,8 +154,8 @@ const addMembersToProject = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User does not exist");
   }
 
-  // first args is the criteria is search by, then the next args is what to update. we are just updating the role here.
-  await ProjectMember.findByIdAndUpdate(
+  // first args is the criteria is search by, then the next args is what to update. we are just updating the role here. IF you are using findByIdAndUpdate -> the first args must be ONE ._id wrapped in mongoose.Types.ObjectId() not an object with different _ids to match
+  await ProjectMember.findOneAndUpdate(
     {
       user: new mongoose.Types.ObjectId(user._id),
       project: new mongoose.Types.ObjectId(projectId),
