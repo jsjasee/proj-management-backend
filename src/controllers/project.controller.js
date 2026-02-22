@@ -6,6 +6,7 @@ import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import mongoose from "mongoose";
 import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
+import { Tasks } from "../models/task.models.js";
 
 // suggested functionality: send an email when the project is created / when a user is added to a project
 
@@ -140,9 +141,14 @@ const deleteProject = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No members in this project.");
   }
 
+  // delete project's tasks if there's any
+  const deletedTasks = await Tasks.deleteMany({
+    project: projectId,
+  });
+
   return res
     .status(200)
-    .json(new ApiResponse(200, project, "Project deleted successfully"));
+    .json(new ApiResponse(200, project, `Project deleted successfully.`));
 });
 
 const addMembersToProject = asyncHandler(async (req, res) => {

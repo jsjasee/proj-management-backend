@@ -1,5 +1,8 @@
 import { body } from "express-validator"; // right now our data is coming from the body of the request so we import the body?
-import { AvailableUserRole } from "../utils/constants.js";
+import {
+  AvailableUserRole,
+  AvailableTaskStatuses,
+} from "../utils/constants.js";
 
 const userRegisterValidator = () => {
   // validate the fields? then run methods on it aka the validators!
@@ -86,6 +89,23 @@ const addMemberToProjectValidator = () => {
   ];
 };
 
+const createTaskValidator = () => {
+  return [
+    body("title").trim().notEmpty().withMessage("Task title is required."),
+
+    body("status")
+      .optional()
+      .isIn(AvailableTaskStatuses)
+      .withMessage("Task status is invalid."),
+  ];
+};
+
+const createSubTaskValidator = () => {
+  return [
+    body("title").trim().notEmpty().withMessage("Subtask title is required."),
+  ];
+};
+
 export {
   userRegisterValidator,
   userLoginValidator,
@@ -94,4 +114,6 @@ export {
   userResetForgotPasswordValidator,
   createProjectValidator,
   addMemberToProjectValidator,
+  createTaskValidator,
+  createSubTaskValidator,
 };

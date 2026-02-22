@@ -39,7 +39,8 @@ const createTask = asyncHandler(async (req, res) => {
 
   const attachments = files.map((file) => {
     return {
-      url: `${process.env.SERVER_URL}/images/${file.originalnam}`, // we are capturing the files from the images folders aka the destination.
+      url: `${process.env.SERVER_URL}/images/${file.filename}`, // we are capturing the files from the images folders aka the destination.
+      // on multer middlewares code file, we have configured filename to be a format we like, so instead of pointing it to the original filename aka file.originalname, point it to file.filename (look at multer middelwares file if confused.)
       mimetype: file.mimetype,
       size: file.size,
     };
@@ -66,7 +67,13 @@ const createTask = asyncHandler(async (req, res) => {
 const getTaskById = asyncHandler(async (req, res) => {
   // this typically fires when they CLICK on something in the frontend
   // this will also fetch ALL the subtasks & assignedTo of that main task (we use an aggregation pipeline instead of populate since many fields to fetch.)
-  const { taskId } = req.params;
+  const { taskId, projectId } = req.params;
+
+  const project = await Project.findById(projectId);
+  if (!project) {
+    throw new ApiError(404, "Project not found.");
+  }
+
   const task = await Tasks.aggregate([
     {
       $match: {
@@ -145,8 +152,14 @@ const getTaskById = asyncHandler(async (req, res) => {
 });
 
 const updateTask = asyncHandler(async (req, res) => {
-  const { taskId } = req.params; // url part
+  const { taskId, projectId } = req.params; // url part
   const { title, description, status } = req.body; // the body section
+
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
 
   if (!AvailableTaskStatuses.includes(status)) {
     throw new ApiError(404, "Task status indicated is not valid.");
@@ -174,7 +187,13 @@ const updateTask = asyncHandler(async (req, res) => {
 const deleteTask = asyncHandler(async (req, res) => {
   let additionalMessage = "";
 
-  const { taskId } = req.params;
+  const { taskId, projectId } = req.params;
+
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
 
   const task = await Tasks.findByIdAndDelete(taskId);
 
@@ -202,7 +221,13 @@ const deleteTask = asyncHandler(async (req, res) => {
 
 const createSubTask = asyncHandler(async (req, res) => {
   const { title } = req.body;
-  const { taskId } = req.params;
+  const { taskId, projectId } = req.params;
+
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
 
   const task = await Tasks.findById(taskId);
 
@@ -224,8 +249,16 @@ const createSubTask = asyncHandler(async (req, res) => {
 
 const updateSubTask = asyncHandler(async (req, res) => {
   const { title, isCompleted } = req.body;
-  const { subtaskId } = req.params;
+  const { subtaskId, projectId } = req.params;
 
+  // PRD (project resource docs) mentioned req.params must accept the projectId so we can just check if the project exists before doing anything
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
+
+  // can also handle this in index.js file in validators if you wish.
   if (!["true", "false"].includes(isCompleted)) {
     throw new ApiError(404, "Status is not valid.");
   }
@@ -249,7 +282,13 @@ const updateSubTask = asyncHandler(async (req, res) => {
 });
 
 const deleteSubTask = asyncHandler(async (req, res) => {
-  const { subtaskId } = req.params;
+  const { subtaskId, projectId } = req.params;
+
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new ApiError(404, "Project not found");
+  }
 
   const subtask = await Subtask.findByIdAndDelete(subtaskId);
 
