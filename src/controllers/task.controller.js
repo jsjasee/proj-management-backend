@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import mongoose from "mongoose";
-import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
+import { AvailableTaskStatuses } from "../utils/constants.js";
 
 const getTasks = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
@@ -145,23 +145,121 @@ const getTaskById = asyncHandler(async (req, res) => {
 });
 
 const updateTask = asyncHandler(async (req, res) => {
-  //code
+  const { taskId } = req.params; // url part
+  const { title, description, status } = req.body; // the body section
+
+  if (!AvailableTaskStatuses.includes(status)) {
+    throw new ApiError(404, "Task status indicated is not valid.");
+  }
+
+  const task = await Tasks.findByIdAndUpdate(
+    taskId,
+    {
+      title,
+      description,
+      status,
+    },
+    { new: true },
+  );
+
+  if (!task) {
+    throw new ApiError(404, "Task not found.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, task, "Task updated successfully."));
 });
 
 const deleteTask = asyncHandler(async (req, res) => {
-  //code
+  let additionalMessage = "";
+
+  const { taskId } = req.params;
+
+  const task = await Tasks.findByIdAndDelete(taskId);
+
+  if (!task) {
+    throw new ApiError(404, "Task not found.");
+  }
+
+  // delete the subtasks as well
+  const subtasks = await Subtask.deleteMany({ task: taskId });
+
+  if (!subtasks) {
+    additionalMessage = "No subtasks in this project.";
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        `Task deleted successfully. ${additionalMessage}`,
+      ),
+    );
 });
 
 const createSubTask = asyncHandler(async (req, res) => {
-  //code
+  const { title } = req.body;
+  const { taskId } = req.params;
+
+  const task = await Tasks.findById(taskId);
+
+  if (!task) {
+    throw new ApiError(404, "Task does not exist.");
+  }
+
+  const subtask = await Subtask.create({
+    title,
+    task: new mongoose.Types.ObjectId(taskId),
+    isCompleted: false,
+    createdBy: new mongoose.Types.ObjectId(req.user._id),
+  });
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, subtask, "Subtask created successfully."));
 });
 
 const updateSubTask = asyncHandler(async (req, res) => {
-  //code
+  const { title, isCompleted } = req.body;
+  const { subtaskId } = req.params;
+
+  if (!["true", "false"].includes(isCompleted)) {
+    throw new ApiError(404, "Status is not valid.");
+  }
+
+  const subtask = Subtask.findByIdAndUpdate(
+    subtaskId,
+    {
+      title,
+      isCompleted: Boolean(isCompleted),
+    },
+    { new: true },
+  );
+
+  if (!subtask) {
+    throw new ApiError("Subtask not found.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, subtask, "Subtask updated successfully."));
 });
 
 const deleteSubTask = asyncHandler(async (req, res) => {
-  //code
+  const { subtaskId } = req.params;
+
+  const subtask = await Subtask.findByIdAndDelete(subtaskId);
+
+  if (!subtask) {
+    throw new ApiError(404, "Subtask not found.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, subtask, "Subtask deleted successfully."));
 });
 
 export {
