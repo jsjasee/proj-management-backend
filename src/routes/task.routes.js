@@ -32,8 +32,8 @@ router
   .get(getTasks)
   .post(
     validateProjectPermission([UserRolesEnum.ADMIN]),
-    createTaskValidator(),
     upload.array("attachments", 5), // field name must match your frontend form-data key
+    createTaskValidator(), // multer MUST run before validators because multipart/form-data requests leave req.body empty until multer parses them. express-validator reads from req.body, so it needs multer to populate it first. (the request comes in as multipart/form-data when you attach the file via postman, this is unreadable for express.js, so multer must parse it first, then populate request.body then express can read it.)
     validate,
     createTask,
   );

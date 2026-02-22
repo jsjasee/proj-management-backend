@@ -263,7 +263,7 @@ const updateSubTask = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Status is not valid.");
   }
 
-  const subtask = Subtask.findByIdAndUpdate(
+  const subtask = await Subtask.findByIdAndUpdate(
     subtaskId,
     {
       title,
